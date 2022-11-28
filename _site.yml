@@ -1,0 +1,18 @@
+name: "Diana-Salinas"
+navbar:
+  title: "dcsalina"
+  left:
+    - text: "Home"
+      href: index.html
+    - text: "DP"
+      href: DP.html
+    - text: "More Info"
+      href: data2.html
+    
+output:
+  html_document:
+    theme: default
+    highlight: textmate
+    include:
+      after_body: footer.html
+    css: styles.css

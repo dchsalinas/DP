@@ -1,0 +1,746 @@
+---
+title: "What is Differential Privacy?"
+output:
+  html_document:
+    df_print: paged
+---
+<style type="text/css">
+.main-container {
+  max-width: 1000px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+ /* unvisited link */
+a:link {
+  color: navy;
+}
+
+/* visited link */
+a:visited {
+  color: green;
+}
+
+/* mouse over link */
+a:hover {
+  color: purple;
+}
+
+/* selected link */
+a:active {
+  color: blue;
+} 
+</style>
+
+Differential privacy (DP) is a system for publicly sharing information about a dataset by describing the patterns of groups within the dataset while still withholding information about individuals. As Wikipedia states:
+
+<blockquote> 
+Roughly, an algorithm is differentially private if an observer seeing its output cannot tell if a particular individual's information was used in the computation. Differential privacy is often discussed in the context of identifying individuals whose information may be in a database. Although it does not directly refer to identification and reidentification attacks, differentially private algorithms probably resist such attacks.
+</blockquote>
+
+<style type="text/css">
+.main-container {
+  max-width: 1300px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+ /* unvisited link */
+a:link {
+  color: navy;
+}
+
+/* visited link */
+a:visited {
+  color: green;
+}
+
+/* mouse over link */
+a:hover {
+  color: purple;
+}
+
+/* selected link */
+a:active {
+  color: blue;
+} 
+</style>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r load-library, message=FALSE, echo=FALSE}
+rm(list = ls())
+pacman::p_load(tidyverse, rmarkdown, htmlwidgets, htmltools, maps, 
+               webshot, leaflet, kableExtra, scales, stringr, stringi,
+               mapproj, usmap, rvest, rcis, plotly, cowplot, socviz, 
+               RColorBrewer, kableExtra, gridExtra, dplyr, tidyr, 
+               ggplot2, diffpriv, sdcMicro, readr, ggrepel, randomNames)
+
+suppressPackageStartupMessages({
+  library(data.table)
+  library(digest)
+  library(knitr) # used only for post creation
+})
+
+library(tinytex) 
+webshot::install_phantomjs(force=TRUE)
+```
+
+## Modification of Data {.tabset}
+### Original Data
+```{r ktable-1, warning=FALSE, message=FALSE}
+#library(htmltools)
+rawData <- read.csv("data/MockData4.csv")
+data <- rawData
+
+#original file is dat // changing the names 
+dat <- rawData %>%
+  rename("ID" = id) %>%
+  rename("Name" = name) %>%
+  rename("Email" = email) %>%
+  rename("Gender" = gender) %>%
+  rename("Age" = age) %>%
+  rename("City" = city) %>%
+  rename("State" = state) %>%
+  rename("SSN" = ssn) %>%
+  rename("Race/Ethnicity" = race) %>%
+  rename("Diabetes" = diabetes) %>%
+  rename("Asthma" = asthma) %>%
+  rename("Depression" = depression) %>% 
+  rename("Anxiety" = anxiety) %>%
+  rename("Migraines" = migraines) %>%
+  rename("Arthritis" = arthritis) %>%
+  rename("Eczema" = eczema) %>%
+  rename("Stroke" = stroke) %>%
+  rename("Dementia" = dementia) %>%
+  rename("HIV" = HIV) 
+
+dat1 <- dat %>% 
+  select(ID, Name, Email, Gender, Age, City, State, 
+         SSN, `Race/Ethnicity`)
+
+kable(head(dat1),caption = "Raw Data Table", booktabs = T) %>%
+  kable_styling(latex_options = c("striped", "hold_position", "scale_down"),
+                bootstrap_options = "striped", full_width = FALSE, 
+                position = "center")%>%
+  row_spec(0, background = "lightblue", color= "black")
+```
+
+```{r binary-to-all, warning=FALSE, message=FALSE}
+#library(htmltools)
+####################### CHANGING THE INFORMATION TO 1/0 #######################
+# Diabetes
+data$diabetes [data$diabetes == "Yes"] <- 1
+data$diabetes [data$diabetes == "No"] <- 0
+data$diabetes <- as.character(data$diabetes)
+
+# Asthma
+data$asthma [data$asthma == "Yes"] <- 1
+data$asthma [data$asthma == "No"] <- 0
+data$asthma <- as.character(data$asthma)
+
+# Depression
+data$depression [data$depression == "Yes"] <- 1
+data$depression [data$depression == "No"] <- 0
+data$depression <- as.character(data$depression)
+
+# Anxiety
+data$anxiety [data$anxiety == "Yes"] <- 1
+data$anxiety [data$anxiety == "No"] <- 0
+data$anxiety <- as.character(data$anxiety)
+
+# Migraines
+data$migraines [data$migraines == "Yes"] <- 1
+data$migraines [data$migraines == "No"] <- 0
+data$migraines <- as.character(data$migraines)
+
+# Arthritis
+data$arthritis [data$arthritis == "Yes"] <- 1
+data$arthritis [data$arthritis == "No"] <- 0
+data$arthritis <- as.character(data$arthritis)
+
+# Eczema
+data$eczema [data$eczema == "Yes"] <- 1
+data$eczema [data$eczema == "No"] <- 0
+data$eczema <- as.character(data$eczema)
+
+# Stroke
+data$stroke [data$stroke == "Yes"] <- 1
+data$stroke [data$stroke == "No"] <- 0
+data$stroke <- as.character(data$stroke)
+
+# Dementia
+data$dementia [data$dementia == "Yes"] <- 1
+data$dementia [data$dementia == "No"] <- 0
+data$dementia <- as.character(data$dementia)
+
+# HIV
+data$HIV [data$HIV == "Yes"] <- 1
+data$HIV [data$HIV == "No"] <- 0
+data$HIV <- as.character(data$HIV)
+
+ID <- data$id
+Gender <- data$gender
+Location <- data$state
+Race <- data$race
+```
+<p>&nbsp;</p>
+
+### Modified Data I 
+```{r ktable-2, warning=FALSE, message=FALSE}
+# columns which will be changed
+willAnonymize <- c("email", "city")
+
+# anonymize using the murmur32 algorithm 
+anonymize <- function(x, algo="murmur32"){
+  unq_hashes <- vapply(unique(x), function(object) digest(object, algo=algo), 
+                       FUN.VALUE="", USE.NAMES=TRUE) #hashing for unique inputs
+  unname(unq_hashes[x])
+}
+
+# columns which will be changed
+willAnonymize2 <- c("name", "ssn")
+
+# anonymize using the xxhash64 algorithm 
+anonymize2 <- function(x, algo="xxhash64"){
+  unq_hashes2 <- vapply(unique(x), function(object) digest(object, algo=algo), 
+                       FUN.VALUE="", USE.NAMES=TRUE) #hashing for unique inputs
+  unname(unq_hashes2[x])
+}
+
+data2 <- data # create a new dataframe from changed data of 1/0
+
+# change age format --> re-coding the age to reduce uniqueness //
+# generalization to achieve k-anonymity
+data2$age <- cut(data$age, breaks = c(0, 21, 29, 39, 49, 59, 71, 100))
+
+setDT(data2) #turning the dataframe into a data table to 
+# be able to use the := function
+
+# anonymize the data// run the dataset through the anonymize functions
+data2[, (willAnonymize) := lapply(.SD, anonymize), .SDcols = willAnonymize]
+data2[, (willAnonymize2) := lapply(.SD, anonymize2), .SDcols = willAnonymize2]
+
+data2 <- data2 %>%
+  rename("ID" = id) %>%
+  rename("Name" = name) %>%
+  rename("Email" = email) %>%
+  rename("Gender" = gender) %>%
+  rename("Age" = age) %>%
+  rename("City" = city) %>%
+  rename("State" = state) %>%
+  rename("SSN" = ssn) %>%
+  rename("Race/Ethnicity" = race) %>%
+  rename("Diabetes" = diabetes) %>%
+  rename("Asthma" = asthma) %>%
+  rename("Depression" = depression) %>% 
+  rename("Anxiety" = anxiety) %>%
+  rename("Migraines" = migraines) %>%
+  rename("Arthritis" = arthritis) %>%
+  rename("Eczema" = eczema) %>%
+  rename("Stroke" = stroke) %>%
+  rename("Dementia" = dementia) %>%
+  rename("HIV" = HIV) 
+
+data2a <- data2 %>%
+  select(ID, Name, Email, Gender, Age, City, State, SSN, 
+         `Race/Ethnicity`)
+
+kable(head(data2a),caption = "Modified table I", booktabs = T) %>%
+  kable_styling(latex_options = c("striped", "hold_position", "scale_down"),
+                bootstrap_options = "striped", 
+                full_width = FALSE, position = "center")%>%
+  row_spec(0, background = "lightblue", color= "black")
+```
+
+<p>&nbsp;</p>
+
+### Modified Data II
+```{r ktable-3, warning=FALSE, message=FALSE}
+# shuffle the dataframe by rows
+shuffled_data = data2[sample(1:nrow(data2)), ]
+
+shuffled_data1 <- shuffled_data %>%
+  select(ID, Name, Email, Gender, Age, City, State, SSN, 
+         `Race/Ethnicity`)
+
+kable(head(shuffled_data1),caption = "Modified table II", booktabs = T) %>%
+  kable_styling(latex_options = c("striped", "hold_position", "scale_down"),
+                bootstrap_options = "striped", 
+                full_width = FALSE, position = "center")%>%
+  row_spec(0, background = "lightblue", color= "black")
+```
+
+<p>&nbsp;</p>
+
+### Modified Data III
+```{r ktable-4, warning=FALSE, message=FALSE}
+shuffled_data1b <- shuffled_data %>%
+  select(Name, Email, Gender, Age, City, State, SSN, 
+         `Race/Ethnicity`)
+
+kable(head(shuffled_data1b),caption = "Modified table III", booktabs = T) %>%
+  kable_styling(latex_options = c("striped", "hold_position", "scale_down"),
+                bootstrap_options = "striped", 
+                full_width = FALSE, position = "center")%>%
+  row_spec(0, background = "lightblue", color= "black")
+```
+<p>&nbsp;</p>
+
+## The Average Percentage of Patients with [~] from the Dataset 
+```{r mean-of-all, warning=FALSE, echo = FALSE}
+# Getting the Mean for All
+# turning the diagnoses data into vectors and (currently it is a character so) switching it to numeric
+Diabetes <- data$diabetes %>%
+  as.numeric()
+Asthma <- data$asthma %>%
+  as.numeric()
+Depression <- data$depression %>%
+  as.numeric()
+Anxiety <- data$anxiety %>%
+  as.numeric()
+Migraines <- data$migraines %>%
+  as.numeric()
+Arthritis <- data$arthritis %>%
+  as.numeric()
+Eczema <- data$eczema %>%
+  as.numeric()
+Stroke <- data$stroke %>%
+  as.numeric()
+Dementia <- data$dementia %>%
+  as.numeric()
+HIV <- data$HIV %>%
+  as.numeric()
+
+DiabetesMean <- mean(Diabetes)
+AsthmaMean <- mean(Asthma)
+DepressionMean <- mean(Depression)
+AnxietyMean <- mean(Anxiety)
+MigrainesMean <- mean(Migraines)
+ArthritisMean <- mean(Arthritis)
+EczemaMean <- mean(Eczema)
+StrokeMean <- mean(Stroke)
+DementiaMean <- mean(Dementia)
+HIVMean <- mean(HIV)
+
+cat("Average for Diabetes: ", DiabetesMean, "\n")
+cat("Average for Asthma: ", AsthmaMean, "\n")
+cat("Average for Depression: ", DepressionMean, "\n")
+cat("Average for Anxiety: ", AnxietyMean, "\n")
+cat("Average for Migraines: ", MigrainesMean, "\n")
+cat("Average for Arthritis", ArthritisMean, "\n")
+cat("Average for Eczema", EczemaMean, "\n")
+cat("Average for Stroke", StrokeMean, "\n")
+cat("Average for Dementia", DementiaMean, "\n")
+cat("Average for HIV", HIVMean, "\n")
+
+```
+
+```{r normal-distribution-noise, warning=FALSE, message=FALSE}
+# noise from normal distribution
+# now choosing an average of 10% to corrupt at random 
+set.seed(1) # specified a seed to make my data reproducible//get the same numbers repeatedly
+noise_20 <- rbinom(length(HIV), 1, 0.20) 
+# corrupt at random generation the vector HIV, for -- trials, for probability 
+# of 20% say Yes (1) vs No (0)// probability of success on each trial
+
+#used binomial distribution since these are yes/no question-answers
+
+set.seed(3)# specified a seed to make my data reproducible//get the same numbers repeatedly
+noise_50 <- rbinom(length(HIV), 1, 0.50) 
+# corrupt at random generation the vector HIV, for -- trials, for probability 
+# of 50% say Yes (1) vs No (0)// probability of success on each trial
+
+
+set.seed(4)# specified a seed to make my data reproducible//get the same numbers repeatedly
+noise_80 <- rbinom(length(HIV), 1, 0.80) 
+# corrupt at random generation the vector HIV, for -- trials, for probability 
+# of 80% say Yes (1) vs No (0)// probability of success on each trial
+
+# 
+# ?Distributions
+# x[corrupt] <- noise
+# x <- as.numeric(x)
+# x <- as.logical(x)
+# HIV_noise <-as.data.frame(x)
+
+```
+<p>&nbsp;</p>
+
+## Standard Deviations {.tabset}
+
+Data density is important because it affects accuracy. Higher densities (not to be confused with higher standard deviations) mean more accuracy. Visually, we can see here how standard deviation affects the results we get. <b>Low standard deviation</b> means data is clustered around the mean, and <b>high standard deviation</b> indicates data are more spread out. A high standard deviation shows that the data is widely spread (less reliable) and a low standard deviation shows that the data are clustered closely around the mean (more reliable).
+
+In other words, a standard deviation close to zero indicates that data points are close to the mean, whereas a high or low standard deviation indicates data points are respectively above or below the mean. 
+
+### Original Data
+```{r plotting-nd, warning=FALSE, message=TRUE, echo = FALSE, fig.width=14,fig.height=6}
+# Plot the bar chart for the total in HIV 
+countOfHIV <- data %>%
+  count(HIV) 
+
+countOfHIV %>%
+ggplot(aes(x = HIV, y = n, fill = n)) + 
+  geom_bar(stat = "identity", fill = "lightblue") +
+  # geom_text(aes(label=n), vjust=2,size = 9, colour = "white") +
+  labs(title = "HIV Results Total")
+
+```
+<p>&nbsp;</p>
+
+### Standard Deviation of .2
+```{r plotting-nd1, warning=FALSE, message=TRUE, echo = FALSE, fig.width=14,fig.height=6}
+# rnorm(n, mean = , sd = )
+# noisy_data <- signal + noise
+# rnorm((noise),  )
+noisy_data_20 <- HIV + rnorm((HIV), 0.172, .2)
+# generate the noise to add and round it 
+
+# Plot the histograms for the above 
+hist(noisy_data_20, main = "Normal Distribution", 
+     col = "lightblue", xlim = c(-5, 5), ylim = c(0, 1.6), freq = FALSE)
+
+# vertical line // mean
+abline(v=0.172,col="red",lwd=3)
+
+# vertical line
+abline(v=1,col="darkgreen",lwd=3)
+```
+<p>&nbsp;</p>
+
+### Standard Deviation of .5
+```{r plotting-nd2, warning=FALSE, message=TRUE, echo = FALSE, fig.width=14,fig.height=6}
+# rnorm(n, mean = , sd = )
+# noisy_data <- signal + noise
+# rnorm((noise),  )
+noisy_data_50 <- HIV + rnorm((HIV), 0.172, .5)
+# generate the noise to add and round it 
+
+hist(noisy_data_50, main = "Normal Distribution", 
+     col = "lightblue", xlim =c(-5, 5), ylim = c(0, .8), freq = FALSE)
+
+# vertical line
+abline(v=0.172,col="red",lwd=3)
+
+# vertical line
+abline(v=1,col="darkgreen",lwd=3)
+```
+<p>&nbsp;</p>
+
+### Standard Deviation of .75
+```{r plotting-nd3, warning=FALSE, message=TRUE, echo = FALSE, fig.width=14,fig.height=6}
+# rnorm(n, mean = , sd = )
+# noisy_data <- signal + noise
+# rnorm((noise),  )
+noisy_data_80 <- HIV + rnorm((HIV), 0.172, .75)
+# generate the noise to add and round it 
+
+hist(noisy_data_80, main = "Normal Distribution",
+     col = "lightblue", xlim = c(-5, 5), ylim = c(0, .5), freq = FALSE)
+
+# vertical line
+abline(v=0.172,col="red",lwd=3)
+
+# vertical line
+abline(v=1,col="darkgreen",lwd=3)
+
+```
+<p>&nbsp;</p>
+
+## Adding Noise to the Data 
+```{r noise-nd-1, warning=FALSE, message=TRUE, echo = TRUE}
+x_20 <- HIV # HIV vector, calling it to x
+print(x_20, max=500)
+
+# adding noise to 10% percent of the data
+x_noise_20 <- sample(0:1, 200,replace=TRUE)  
+print(x_noise_20)
+
+# about 10% of x has been corrupted // the first 100 values
+x_20[1:200] <- c(x_noise_20) 
+print(x_20, max=500)
+
+x_20 <- x_20 %>%
+  as.character()
+
+HIVtibble2D <- tibble(ID, Gender, Location, Race, x_20)
+
+HIVtibble2D <- HIVtibble2D %>%
+  rename("HIV Results with Noise - 20" = x_20)
+  
+HIVtibble2Da <- HIVtibble2D %>%
+  group_by(Location) %>%
+  count(`HIV Results with Noise - 20`)
+```
+```{r noise-nd-2, warning=FALSE, message=FALSE, echo = FALSE}
+
+
+x_50 <- HIV # HIV vector, calling it to x
+
+# adding noise to 50% percent of the data
+x_noise_50 <- sample(0:1, 500,replace=TRUE)  
+
+# about 50% of x has been corrupted // the first 500 values
+x_50[1:500] <- c(x_noise_50) 
+
+x_50 <- x_50 %>%
+  as.character()
+
+HIVtibble3 <- tibble(ID, Gender, Location, Race, x_50)
+
+HIVtibble3 <- HIVtibble3 %>%
+  rename("HIV Results with Noise - 50" = x_50)
+  
+HIVtibble3a <- HIVtibble3 %>%
+  group_by(Location) %>%
+  count(`HIV Results with Noise - 50`)
+```
+
+```{r noise-nd-3, warning=FALSE, message=FALSE, echo = FALSE}
+x_75 <- HIV # HIV vector, calling it to x
+
+# adding noise to 75% percent of the data
+x_noise_75 <- sample(0:1, 750,replace=TRUE)  
+
+# about 75% of x has been corrupted // the first 750 values
+x_75[1:750] <- c(x_noise_75) 
+
+x_75 <- x_75 %>%
+  as.character()
+
+HIVtibble4 <- tibble(ID, Gender, Location, Race, x_75)
+
+HIVtibble4 <- HIVtibble4 %>%
+  rename("HIV Results with Noise - 75" = x_75)
+
+HIVtibble4a <- HIVtibble4 %>%
+  group_by(Location) %>%
+  count(`HIV Results with Noise - 75`)
+```
+
+```{r tibble-HIVnoise-1, warning=FALSE, message=TRUE, echo = FALSE}
+######################### CREATING TIBBLE FOR HIV ###########################
+HIV <- HIV %>%
+  as.character()
+x_20 <- x_20 %>%
+  as.character()
+
+HIVtibble <- tibble(ID, Gender, Location, Race,HIV, x_20)
+
+HIVtibble <- HIVtibble %>%
+  rename("HIV Results" = HIV) %>%
+  rename("HIV Results with Noise" = x_20)
+  
+HIVtibble1 <- HIVtibble %>%
+  group_by(Location) %>%
+  count(`HIV Results`)
+
+HIVtibble2 <- HIVtibble %>%
+  group_by(Location) %>%
+  count(`HIV Results with Noise`)
+```
+<p>&nbsp;</p>
+
+## Positive Cases Map Visualization {.tabset}
+### Orignal Data 
+```{r visualizing0, warning=FALSE, message=TRUE, echo = FALSE, fig.width=14,fig.height=6}
+# joining the data
+us_states <- us_map("state") %>%
+  rename("long" = x) %>%
+  rename("lat" = y) %>%
+  rename("state" = abbr) %>%
+  rename("Location" = full)
+
+HIVtibble5 <- HIVtibble %>%
+  group_by(Location) %>%
+  count(`HIV Results`)
+
+mapToBeUsedForHIV1 <- left_join(us_states, HIVtibble5, by="Location")
+
+mapToBeUsedForHIV1 %>%
+  ggplot(mapping = aes(x = long, y = lat, group = group, fill = n)) +
+  geom_polygon(color = "gray", linewidth=0.2) +
+  coord_equal() +
+  labs(title = "HIV Results without Noise",
+       subtitle = "Diana Salinas")+
+  scale_fill_distiller(palette = "Blues", trans = "reverse") +
+  theme_map() 
+```
+<p>&nbsp;</p><p>&nbsp;</p>
+
+### 20% 
+```{r visualizing1, warning=FALSE, message=TRUE, echo = FALSE, fig.width=14,fig.height=6}
+# joining the data
+mapToBeUsedForHIV2 <- left_join(us_states, HIVtibble2, by="Location")
+
+mapToBeUsedForHIV2 %>%
+  ggplot(mapping = aes(x = long, y = lat, group = group, fill = n)) +
+  geom_polygon(color = "gray", linewidth=0.2) +
+  coord_equal() +
+  labs(title = "HIV Results with Noise",
+       subtitle = "Diana Salinas")+
+  scale_fill_distiller(palette = "Blues", trans = "reverse") +
+  theme_map() 
+```
+<p>&nbsp;</p><p>&nbsp;</p>
+
+### 50% 
+```{r visualizing2, warning=FALSE, message=TRUE, echo = FALSE, fig.width=14,fig.height=6}
+# joining the data
+mapToBeUsedForHIV3 <- left_join(us_states, HIVtibble3a, by="Location")
+
+mapToBeUsedForHIV3 %>%
+  ggplot(mapping = aes(x = long, y = lat, group = group, fill = n)) +
+  geom_polygon(color = "gray", linewidth=0.2) +
+  coord_equal() +
+  labs(title = "HIV Results with Noise",
+       subtitle = "Diana Salinas")+
+  scale_fill_distiller(palette = "Blues", trans = "reverse") +
+  theme_map() 
+```
+<p>&nbsp;</p><p>&nbsp;</p>
+### 75% 
+```{r visualizing3, warning=FALSE, message=TRUE, echo = FALSE, fig.width=14,fig.height=6}
+# joining the data
+mapToBeUsedForHIV4 <- left_join(us_states, HIVtibble4a, by="Location")
+
+mapToBeUsedForHIV4 %>%
+  ggplot(mapping = aes(x = long, y = lat, group = group, fill = n)) +
+  geom_polygon(color = "gray", linewidth=0.2) +
+  coord_equal() +
+  labs(title = "HIV Results with Noise",
+       subtitle = "Diana Salinas")+
+  scale_fill_distiller(palette = "Blues", trans = "reverse") +
+  theme_map() 
+```
+<p>&nbsp;</p><p>&nbsp;</p>
+
+## Comparison Data Tables {.tabset}
+### Original Data
+```{r graphing-HIV-no-noise-1, warning=FALSE, message=TRUE, echo = FALSE, fig.width=14,fig.height=6}
+HIVtibble1 %>%
+  ggplot(mapping = aes(x=Location,
+                     y=n,
+                     fill = `HIV Results`)) +
+   geom_bar(position="dodge", stat="identity", reverse = TRUE) +
+   ylim(0, 100) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+   scale_fill_discrete(labels=c('Negative', 'Positive')) +
+  labs(title = "HIV Results without Noise", fill="Results")
+```
+<p>&nbsp;</p>
+
+
+### MD 20%
+```{r graphing-HIVnoise-2, warning=FALSE, message=TRUE, echo = FALSE, fig.width=14,fig.height=6}
+HIVtibble2 %>%
+  ggplot(mapping = aes(x=Location,
+                     y=n,
+                     fill = `HIV Results with Noise`)) +
+   ylim(0, 100) +
+   geom_bar(position="dodge", stat="identity") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+   scale_fill_discrete(labels=c('Negative', 'Positive')) +
+  labs(title = "HIV Results with Noise", fill="Results")
+```
+
+<p>&nbsp;</p>
+
+### MD 50%
+```{r graphing-HIVnoise-3, warning=FALSE, message=TRUE, echo = FALSE, fig.width=14,fig.height=6}
+HIVtibble3a %>%
+  ggplot(mapping = aes(x=Location,
+                     y=n,
+                     fill = `HIV Results with Noise - 50`)) +
+   ylim(0, 100) +
+   geom_bar(position="dodge", stat="identity") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+   scale_fill_discrete(labels=c('Negative', 'Positive')) +
+  labs(title = "HIV Results with Noise", fill="Results")
+```
+
+<p>&nbsp;</p>
+
+### MD 75%
+```{r graphing-HIVnoise-4, warning=FALSE, message=TRUE, echo = FALSE, fig.width=14,fig.height=6}
+HIVtibble4a %>%
+  ggplot(mapping = aes(x=Location,
+                     y=n,
+                     fill = `HIV Results with Noise - 75`)) +
+   ylim(0, 100) +
+   geom_bar(position="dodge", stat="identity") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+   scale_fill_discrete(labels=c('Negative', 'Positive')) +
+  labs(title = "HIV Results with Noise", fill="Results")
+```
+<p>&nbsp;</p>
+
+## Separated Data Between Positive and Negative {.tabset}
+### Original Data
+```{r graphing-HIV-no-noise-1a, warning=FALSE, message=TRUE, echo = FALSE, fig.width=14,fig.height=6}
+HIVtibble1 %>%
+  ggplot(mapping = aes(x=Location,
+                     y=n,
+                     fill = `HIV Results`)) +
+   geom_bar(position="dodge", stat="identity") +
+   ylim(0, 100) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+  geom_text(aes(label=n), colour = "black", vjust=-.5,size = 4) +
+  scale_fill_discrete(labels=c('Negative', 'Positive')) +
+  labs(title = "HIV Results without Noise", fill="Results") +
+  facet_wrap(~`HIV Results`, 2)
+```
+
+<p>&nbsp;</p>
+
+### 20%
+```{r graphing-HIV-noise-1a, warning=FALSE, message=TRUE, echo = FALSE, fig.width=14,fig.height=6}
+HIVtibble2 %>%
+  ggplot(mapping = aes(x=Location,
+                     y=n,
+                     fill = `HIV Results with Noise`)) +
+   geom_bar(position="dodge", stat="identity") +
+   ylim(0, 100) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+  geom_text(aes(label=n), colour = "black", vjust=-.5,size = 4) +
+  scale_fill_discrete(labels=c('Negative', 'Positive')) +
+  labs(title = "HIV Results with Noise", fill="Results") +
+  facet_wrap(~`HIV Results with Noise`, 2)
+```
+<p>&nbsp;</p>
+
+### 50%
+```{r graphing-HIV-noise-2a, warning=FALSE, message=TRUE, echo = FALSE, fig.width=14,fig.height=6}
+HIVtibble3a %>%
+  ggplot(mapping = aes(x=Location,
+                     y=n,
+                     fill = `HIV Results with Noise - 50`)) +
+   geom_bar(position="dodge", stat="identity") +
+   ylim(0, 100) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+  geom_text(aes(label=n), colour = "black", vjust=-.5,size = 4) +
+  scale_fill_discrete(labels=c('Negative', 'Positive')) +
+  labs(title = "HIV Results with Noise", fill="Results") +
+  facet_wrap(~`HIV Results with Noise - 50`, 2)
+```
+<p>&nbsp;</p>
+
+### 75%
+```{r graphing-HIV-noise-3a, warning=FALSE, message=TRUE, echo = FALSE, fig.width=14,fig.height=6}
+HIVtibble4a %>%
+  ggplot(mapping = aes(x=Location,
+                     y=n,
+                     fill = `HIV Results with Noise - 75`)) +
+   geom_bar(position="dodge", stat="identity") +
+   ylim(0, 100) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+  geom_text(aes(label=n), colour = "black", vjust=-.5,size = 4) +
+  scale_fill_discrete(labels=c('Negative', 'Positive')) +
+  labs(title = "HIV Results with Noise", fill="Results") +
+  facet_wrap(~`HIV Results with Noise - 75`, 2)
+```
+<p>&nbsp;</p>
+
+## How Can it be Improved

@@ -1,0 +1,21 @@
+---
+title: "Home"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Project Overview
+
+The objective of this project is to test the system of differential privacy (DP). DP reinforces sharing people’s personal information without divulging personal identifications or sensitive datasets (Apple Inc., 2016). At the beginning of the project, my goal was to design and implement this concept to create statistical noise on raw data. As the project progressed, I would compare the original data with the noisy data to demonstrate the impact the noise has on the privacy of users. One of the many challenges I may face is to add enough noise to satisfy the definition of DP, but not so much that the solution and information become too noisy to be useful. My overall goal is to illustrate the reasoning behind needing to use DP techniques to preserve the privacy of users.
+
+
+## Reasons Why We Need Differential Privacy
+## Changes that Need to Be Made
+## Why Knowing the Amount of Noise added to Data is Important
+Improper procedures (or improperly-documented procedures) to subtract out the noise in data can lead to a false sense of accuracy or false conclusions. 
+
