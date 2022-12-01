@@ -1,30 +1,934 @@
 ---
-title: "Visualizations of Information"
-author: "Diana Salinas"
-date: "`r Sys.Date()`"
-output: html_document
+title: "Additional Information"
+output:
+  html_document:
+    df_print: paged
 ---
 
+<style type="text/css">
+.main-container {
+  max-width: 1250px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+ /* unvisited link */
+a:link {
+  color: navy;
+}
+
+/* visited link */
+a:visited {
+  color: green;
+}
+
+/* mouse over link */
+a:hover {
+  color: purple;
+}
+
+/* selected link */
+a:active {
+  color: blue;
+} 
+</style>
+
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE)
 ```
 
-## R Markdown
+```{r load-library, message=FALSE, echo=FALSE}
+rm(list = ls())
+pacman::p_load(tidyverse, rmarkdown, htmlwidgets, htmltools, maps, 
+               webshot, leaflet, kableExtra, scales, stringr, stringi,
+               mapproj, usmap, rvest, rcis, plotly, cowplot, socviz, 
+               RColorBrewer, kableExtra, gridExtra, dplyr, tidyr, 
+               ggplot2, diffpriv, sdcMicro, readr, ggrepel, randomNames, tidyquery, countrycode)
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+suppressPackageStartupMessages({
+  library(data.table)
+  library(digest)
+  library(knitr) # used only for post creation
+})
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+library(tinytex) 
+webshot::install_phantomjs(force=TRUE)
 
-```{r cars}
-summary(cars)
+library(DBI) # main DB interface
+library(RSQLite) # To connect to SQLite DB
+library(tidyverse) # for dplyr, readr etc.
+library(dbplyr) # dplyr backend for DBs
 ```
 
-## Including Plots
+The information in this study will be used only for research purposes and in ways that will not reveal the identies of people. Federal or state laws may require us to show information to university or government officials (or sponsors) who are responsible for monitoring the safety of this study. Directly identifying information (e.g. names, addresses) will be safeguarded and maintained under controlled conditions. People will not be identified in any publication from this study. For (even) more information, please scroll to the bottom of the page for a summary of the datasets.
 
-You can also embed plots, for example:
+```{r, message = FALSE, echo=FALSE}
+# read in the TidyTuesday dataset
+#library(htmltools)
+rawData1_1 <- read.csv("data/MockData4.csv")
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+# columns which will be changed
+willAnonymize <- c("email", "city")
+
+# anonymize using the murmur32 algorithm 
+anonymize <- function(x, algo="murmur32"){
+  unq_hashes <- vapply(unique(x), function(object) digest(object, algo=algo), 
+                       FUN.VALUE="", USE.NAMES=TRUE) #hashing for unique inputs
+  unname(unq_hashes[x])
+}
+
+# columns which will be changed
+willAnonymize2 <- c("name", "ssn")
+
+# anonymize using the xxhash64 algorithm 
+anonymize2 <- function(x, algo="xxhash64"){
+  unq_hashes2 <- vapply(unique(x), function(object) digest(object, algo=algo), 
+                       FUN.VALUE="", USE.NAMES=TRUE) #hashing for unique inputs
+  unname(unq_hashes2[x])
+}
+
+rawData1_2 <- rawData1_1 # create a new dataframe from changed data of 1/0
+
+# change age format --> re-coding the age to reduce uniqueness //
+# generalization to achieve k-anonymity
+rawData1_2$age <- cut(rawData1_2$age, breaks = c(0, 21, 35, 49, 59, 71, 100))
+
+setDT(rawData1_2) #turning the dataframe into a data table to 
+# be able to use the := function
+
+# anonymize the data// run the dataset through the anonymize functions
+rawData1_2[, (willAnonymize) := lapply(.SD, anonymize), .SDcols = willAnonymize]
+rawData1_2[, (willAnonymize2) := lapply(.SD, anonymize2), .SDcols = willAnonymize2]
+
+shuffled_data1_2 = rawData1_2[sample(1:nrow(rawData1_2)), ]
+
+####################### CHANGING THE INFORMATION TO 1/0 #######################
+# Diabetes
+shuffled_data1_2$diabetes [shuffled_data1_2$diabetes == "Yes"] <- 1
+shuffled_data1_2$diabetes [shuffled_data1_2$diabetes == "No"] <- 0
+shuffled_data1_2$diabetes <- as.character(shuffled_data1_2$diabetes)
+
+# Asthma
+shuffled_data1_2$asthma [shuffled_data1_2$asthma == "Yes"] <- 1
+shuffled_data1_2$asthma [shuffled_data1_2$asthma == "No"] <- 0
+shuffled_data1_2$asthma <- as.character(shuffled_data1_2$asthma)
+
+# Depression
+shuffled_data1_2$depression [shuffled_data1_2$depression == "Yes"] <- 1
+shuffled_data1_2$depression [shuffled_data1_2$depression == "No"] <- 0
+shuffled_data1_2$depression <- as.character(shuffled_data1_2$depression)
+
+# Anxiety
+shuffled_data1_2$anxiety [shuffled_data1_2$anxiety == "Yes"] <- 1
+shuffled_data1_2$anxiety [shuffled_data1_2$anxiety == "No"] <- 0
+shuffled_data1_2$anxiety <- as.character(shuffled_data1_2$anxiety)
+
+# Migraines
+shuffled_data1_2$migraines [shuffled_data1_2$migraines == "Yes"] <- 1
+shuffled_data1_2$migraines [shuffled_data1_2$migraines == "No"] <- 0
+shuffled_data1_2$migraines <- as.character(shuffled_data1_2$migraines)
+
+# Arthritis
+shuffled_data1_2$arthritis [shuffled_data1_2$arthritis == "Yes"] <- 1
+shuffled_data1_2$arthritis [shuffled_data1_2$arthritis == "No"] <- 0
+shuffled_data1_2$arthritis <- as.character(shuffled_data1_2$arthritis)
+
+# Eczema
+shuffled_data1_2$eczema [shuffled_data1_2$eczema == "Yes"] <- 1
+shuffled_data1_2$eczema [shuffled_data1_2$eczema == "No"] <- 0
+shuffled_data1_2$eczema <- as.character(shuffled_data1_2$eczema)
+
+# Stroke
+shuffled_data1_2$stroke [shuffled_data1_2$stroke == "Yes"] <- 1
+shuffled_data1_2$stroke [shuffled_data1_2$stroke == "No"] <- 0
+shuffled_data1_2$stroke <- as.character(shuffled_data1_2$stroke)
+
+# Dementia
+shuffled_data1_2$dementia [shuffled_data1_2$dementia == "Yes"] <- 1
+shuffled_data1_2$dementia [shuffled_data1_2$dementia == "No"] <- 0
+shuffled_data1_2$dementia <- as.character(shuffled_data1_2$dementia)
+
+# HIV
+shuffled_data1_2$HIV [shuffled_data1_2$HIV == "Yes"] <- 1
+shuffled_data1_2$HIV [shuffled_data1_2$HIV == "No"] <- 0
+shuffled_data1_2$HIV <- as.character(shuffled_data1_2$HIV)
+
+ID <- shuffled_data1_2$id
+Gender <- shuffled_data1_2$gender
+Location <- shuffled_data1_2$state
+Race <- shuffled_data1_2$race
+
+#original file is dat // changing the names 
+shuffled_data1_2 <- shuffled_data1_2 %>%
+  rename("ID" = id) %>%
+  rename("Name" = name) %>%
+  rename("Email" = email) %>%
+  rename("Gender" = gender) %>%
+  rename("Age" = age) %>%
+  rename("City" = city) %>%
+  rename("State" = state) %>%
+  rename("SSN" = ssn) %>%
+  rename("Race/Ethnicity" = race) %>%
+  rename("Diabetes" = diabetes) %>%
+  rename("Asthma" = asthma) %>%
+  rename("Depression" = depression) %>% 
+  rename("Anxiety" = anxiety) %>%
+  rename("Migraines" = migraines) %>%
+  rename("Arthritis" = arthritis) %>%
+  rename("Eczema" = eczema) %>%
+  rename("Stroke" = stroke) %>%
+  rename("Dementia" = dementia) %>%
+  rename("HIV" = HIV) 
+
+write.csv(shuffled_data1_2,"data/anonymizedData.csv", row.names = FALSE)
+
+shuffled_data1_3 <- read_csv("data/anonymizedData.csv")
+# 
+# shuffled_data1_3 <- shuffled_data1_3 %>%
+#   select(Gender, Age, State,  `Race/Ethnicity`)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```{r noise-nd-1, warning=FALSE, message=TRUE, echo = FALSE}
+# creating vectors, calling it to x
+Diabetesx_20  <- shuffled_data1_3$Diabetes 
+Asthmax_20  <- shuffled_data1_3$Asthma 
+Depressionx_20  <- shuffled_data1_3$Depression 
+Anxietyx_20  <- shuffled_data1_3$Anxiety 
+Migrainesx_20  <- shuffled_data1_3$Migraines
+Arthritisx_20  <- shuffled_data1_3$Arthritis 
+Eczemax_20  <- shuffled_data1_3$Eczema 
+Strokex_20  <- shuffled_data1_3$Stroke
+Dementiax_20  <- shuffled_data1_3$Dementia 
+HIVx_20  <- shuffled_data1_3$HIV 
+
+# adding noise to 20% percent of the data
+x_noise_20a <- sample(0:1, 200,replace=TRUE)
+x_noise_20b <- sample(0:1, 200,replace=TRUE)
+x_noise_20c <- sample(0:1, 200,replace=TRUE)
+x_noise_20d <- sample(0:1, 200,replace=TRUE)
+x_noise_20e <- sample(0:1, 200,replace=TRUE)
+x_noise_20f <- sample(0:1, 200,replace=TRUE)
+x_noise_20g <- sample(0:1, 200,replace=TRUE)
+x_noise_20h <- sample(0:1, 200,replace=TRUE)
+x_noise_20i <- sample(0:1, 200,replace=TRUE)
+x_noise_20j <- sample(0:1, 200,replace=TRUE)
+
+# about 20% of x has been corrupted // the first 200 values
+Diabetesx_20[1:200] <- c(x_noise_20a)
+Asthmax_20[1:200]  <- c(x_noise_20b)
+Depressionx_20[1:200] <- c(x_noise_20c)
+Anxietyx_20[1:200]  <- c(x_noise_20d)
+Migrainesx_20[1:200] <- c(x_noise_20e)
+Arthritisx_20[1:200]  <- c(x_noise_20f)
+Eczemax_20[1:200]  <- c(x_noise_20g)
+Strokex_20[1:200]  <- c(x_noise_20h)
+Dementiax_20[1:200]  <-c(x_noise_20i)
+HIVx_20[1:200]  <-  c(x_noise_20j)
+
+# creating vectors, calling it to x
+Diabetesx_20  <- Diabetesx_20 %>%
+    as.character()
+Asthmax_20  <- Asthmax_20 %>%
+    as.character()
+Depressionx_20  <- Depressionx_20 %>%
+    as.character()
+Anxietyx_20  <- Anxietyx_20 %>%
+    as.character()
+Migrainesx_20  <- Migrainesx_20 %>%
+    as.character()
+Arthritisx_20  <- Arthritisx_20 %>%
+    as.character()
+Eczemax_20  <- Eczemax_20 %>%
+    as.character()
+Strokex_20  <- Strokex_20 %>%
+    as.character()
+Dementiax_20  <- Dementiax_20 %>%
+    as.character()
+HIVx_20  <- HIVx_20 %>%
+    as.character()
+
+ID <- shuffled_data1_3$ID
+Name <- shuffled_data1_3$Name
+Email <- shuffled_data1_3$Email
+Gender <- shuffled_data1_3$Gender
+Age <- shuffled_data1_3$Age
+City <- shuffled_data1_3$City
+State <- shuffled_data1_3$State
+SSN <- shuffled_data1_3$SSN
+`Race/Ethnicity` <- shuffled_data1_3$`Race/Ethnicity`
+
+shuffled_data1_4 <- tibble(ID, Name, Email, Gender, Age, City, State, SSN, `Race/Ethnicity`, Diabetesx_20, Asthmax_20, Depressionx_20, Anxietyx_20, Migrainesx_20, Arthritisx_20, Eczemax_20, Strokex_20, Dementiax_20, HIVx_20)
+
+#original file is dat // changing the names 
+shuffled_data1_4 <- shuffled_data1_4 %>%
+  rename("Diabetes" = Diabetesx_20) %>%
+  rename("Asthma" = Asthmax_20) %>%
+  rename("Depression" = Depressionx_20) %>% 
+  rename("Anxiety" = Anxietyx_20) %>%
+  rename("Migraines" = Migrainesx_20) %>%
+  rename("Arthritis" = Arthritisx_20) %>%
+  rename("Eczema" = Eczemax_20) %>%
+  rename("Stroke" = Strokex_20) %>%
+  rename("Dementia" = Dementiax_20) %>%
+  rename("HIV" = HIVx_20) 
+
+write.csv(shuffled_data1_4,"data/anonymized2Data.csv", row.names = FALSE)
+```
+
+
+```{r, message = FALSE, echo=FALSE}
+transit_cost <- readr::read_csv(glue::glue("data/anonymized2Data.csv")) %>%
+  select(Gender, Age, State,  `Race/Ethnicity`)
+
+transit_cost2 <-readr::read_csv(glue::glue("data/anonymized2Data.csv")) %>%
+  select(Gender, Age, State,  `Race/Ethnicity`, Diabetes, Asthma, Depression, Anxiety, Migraines, Arthritis, Eczema, Stroke, Dementia, HIV)
+# 
+# transit_cost %>%
+#   DT::datatable(list(scrollX = TRUE,
+#                      pageLength = 50))
+```
+
+
+```{r, message = FALSE, echo=FALSE}
+# Make a connection to a non-existant
+# DB - here the DB `ticket_to_ride` does
+# not yet exist.
+# This step creates it.
+con <- DBI::dbConnect(RSQLite::SQLite(), 
+        dbname = "DP.sqlite")
+
+```
+
+```{r, message = FALSE, echo=FALSE}
+# Write dataframes into DB tables 
+dbWriteTable(con,
+    "transit_cost", # table will be named transit_cost
+    transit_cost, # df being written
+    overwrite = TRUE)
+
+dbWriteTable(con,
+    "transit_cost2", # table will be named transit_cost
+    transit_cost2, # df being written
+    overwrite = TRUE)
+
+# close the connection
+dbDisconnect(con)
+```
+
+```{r, message = FALSE, echo=FALSE}
+# Make a connection
+ttr_con <- dbConnect(RSQLite::SQLite(), "DP.sqlite")
+ttr_con2 <- dbConnect(RSQLite::SQLite(), "DP.sqlite")
+# List tables in DB
+# dbListTables(ttr_con)
+```
+
+<p>&nbsp;</p>
+
+# Healthcare Dataset Results 
+## Summary {.tabset .tabset-dropdown} 
+
+<!-- The tables below break down the data collected from the data with 20% noise.  -->
+Key: 0 represents the patient(s) have tested negative. In the tables, 1 refers to patient(s) testing positive.
+
+### Total Patients for Each State
+```{r, message = FALSE, echo=FALSE}
+# Get a glimpse of the data
+# Using the connection reach into the DB
+# and show some of the data
+# Equivalent to:
+#   SELECT * FROM transit_cost ...
+tbl(ttr_con, "transit_cost") %>%
+  count(State) %>%
+  rename("Total" = n)
+```
+<p>&nbsp;</p><p>&nbsp;</p>
+
+### Total Patients for Each State Based on Age Group
+```{r, message = FALSE, echo=FALSE}
+# Get a glimpse of the data
+# Using our connection reach into the DB
+# and show us some of the data for GR
+# Equivalent to:
+#   SELECT * FROM transit_cost...
+tbl(ttr_con, "transit_cost") %>%
+  count(State, Age) %>%
+  rename("Total" = n)
+```
+<p>&nbsp;</p><p>&nbsp;</p>
+
+### Total Patients Based on Age Group
+```{r, message = FALSE, echo=FALSE}
+# Get a glimpse of the data
+# Using our connection reach into the DB
+# and show us some of the data for GR
+# Equivalent to:
+#   SELECT * FROM transit_cost...
+tbl(ttr_con, "transit_cost") %>%
+  count(Age) %>%
+  rename("Total" = n)
+```
+<p>&nbsp;</p><p>&nbsp;</p>
+
+## Based on Condition and State {.tabset .tabset-dropdown} 
+<!-- The tables below break down the data collected from the data with 20% noise.  -->
+Note: 0 represents Negative, and 1 represents Positive.
+
+### Total Patients with Diabetes
+```{r, message = FALSE, echo=FALSE}
+# Get a glimpse of the data
+# Using our connection reach into the DB
+# and show us some of the data for GR
+# Equivalent to:
+#   SELECT * FROM transit_cost...
+tbl(ttr_con2, "transit_cost2") %>%
+  count(State, Diabetes) %>%
+  rename("Total" = n)
+```
+<p>&nbsp;</p><p>&nbsp;</p>
+
+### Total Patients with Asthma
+```{r, message = FALSE, echo=FALSE}
+# Get a glimpse of the data
+# Using our connection reach into the DB
+# and show us some of the data for GR
+# Equivalent to:
+#   SELECT * FROM transit_cost...
+tbl(ttr_con2, "transit_cost2") %>%
+  count(State, Asthma) %>%
+  rename("Total" = n) 
+```
+<p>&nbsp;</p><p>&nbsp;</p>
+
+### Total Patients with Depression
+```{r, message = FALSE, echo=FALSE}
+# Get a glimpse of the data
+# Using our connection reach into the DB
+# and show us some of the data for GR
+# Equivalent to:
+#   SELECT * FROM transit_cost...
+tbl(ttr_con2, "transit_cost2") %>%
+  count(State, Depression) %>%
+  rename("Total" = n) 
+```
+<p>&nbsp;</p><p>&nbsp;</p>
+
+### Total Patients with Anxiety
+```{r, message = FALSE, echo=FALSE}
+# Get a glimpse of the data
+# Using our connection reach into the DB
+# and show us some of the data for GR
+# Equivalent to:
+#   SELECT * FROM transit_cost...
+tbl(ttr_con2, "transit_cost2") %>%
+  count(State, Anxiety) %>%
+  rename("Total" = n) 
+```
+<p>&nbsp;</p><p>&nbsp;</p>
+
+### Total Patients with Migraines
+```{r, message = FALSE, echo=FALSE}
+# Get a glimpse of the data
+# Using our connection reach into the DB
+# and show us some of the data for GR
+# Equivalent to:
+#   SELECT * FROM transit_cost...
+tbl(ttr_con2, "transit_cost2") %>%
+  count(State, Migraines) %>%
+  rename("Total" = n) 
+```
+<p>&nbsp;</p><p>&nbsp;</p>
+
+### Total Patients with Arthritis
+```{r, message = FALSE, echo=FALSE}
+# Get a glimpse of the data
+# Using our connection reach into the DB
+# and show us some of the data for GR
+# Equivalent to:
+#   SELECT * FROM transit_cost....
+tbl(ttr_con2, "transit_cost2") %>%
+  count(State, Arthritis) %>%
+  rename("Total" = n) 
+```
+<p>&nbsp;</p><p>&nbsp;</p>
+
+### Total Patients with Eczema
+```{r, message = FALSE, echo=FALSE}
+# Get a glimpse of the data
+# Using our connection reach into the DB
+# and show us some of the data for GR
+# Equivalent to:
+#   SELECT * FROM transit_cost...
+tbl(ttr_con2, "transit_cost2") %>%
+  count(State, Eczema) %>%
+  rename("Total" = n) 
+```
+<p>&nbsp;</p><p>&nbsp;</p>
+
+### Total Patients with Stroke
+```{r, message = FALSE, echo=FALSE}
+# Get a glimpse of the data
+# Using our connection reach into the DB
+# and show us some of the data for GR
+# Equivalent to:
+#   SELECT * FROM transit_cost...
+tbl(ttr_con2, "transit_cost2") %>%
+  count(State, Stroke) %>%
+  rename("Total" = n) 
+```
+<p>&nbsp;</p><p>&nbsp;</p>
+
+### Total Patients with Dementia
+```{r, message = FALSE, echo=FALSE}
+# Get a glimpse of the data
+# Using our connection reach into the DB
+# and show us some of the data for GR
+# Equivalent to:
+#   SELECT * FROM transit_cost...
+tbl(ttr_con2, "transit_cost2") %>%
+  count(State, Dementia) %>%
+  rename("Total" = n) 
+```
+<p>&nbsp;</p><p>&nbsp;</p>
+
+### Total Patients with HIV
+```{r, message = FALSE, echo=FALSE}
+# Get a glimpse of the data
+# Using our connection reach into the DB
+# and show us some of the data for GR
+# Equivalent to:
+#   SELECT * FROM transit_cost...
+tbl(ttr_con2, "transit_cost2") %>%
+  count(State, HIV) %>%
+  rename("Total" = n) 
+```
+<p>&nbsp;</p><p>&nbsp;</p>
+
+
+## Based on Condition and Gender{.tabset .tabset-dropdown} 
+<!-- The tables below break down the data collected from the data with 20% noise.  -->
+Note: 0 represents Negative, and 1 represents Positive.
+
+### Total Patients with Diabetes
+```{r, message = FALSE, echo=FALSE}
+# Get a glimpse of the data
+# Using our connection reach into the DB
+# and show us some of the data for GR
+# Equivalent to:
+#   SELECT * FROM transit_cost...
+tbl(ttr_con2, "transit_cost2") %>%
+  count(Gender, Diabetes) %>%
+  rename("Total" = n)
+```
+<p>&nbsp;</p><p>&nbsp;</p>
+
+### Total Patients with Asthma
+```{r, message = FALSE, echo=FALSE}
+# Get a glimpse of the data
+# Using our connection reach into the DB
+# and show us some of the data for GR
+# Equivalent to:
+#   SELECT * FROM transit_cost...
+tbl(ttr_con2, "transit_cost2") %>%
+  count(Gender, Asthma) %>%
+  rename("Total" = n) 
+```
+<p>&nbsp;</p><p>&nbsp;</p>
+
+### Total Patients with Depression
+```{r, message = FALSE, echo=FALSE}
+# Get a glimpse of the data
+# Using our connection reach into the DB
+# and show us some of the data for GR
+# Equivalent to:
+#   SELECT * FROM transit_cost...
+tbl(ttr_con2, "transit_cost2") %>%
+  count(Gender, Depression) %>%
+  rename("Total" = n) 
+```
+<p>&nbsp;</p><p>&nbsp;</p>
+
+### Total Patients with Anxiety
+```{r, message = FALSE, echo=FALSE}
+# Get a glimpse of the data
+# Using our connection reach into the DB
+# and show us some of the data for GR
+# Equivalent to:
+#   SELECT * FROM transit_cost...
+tbl(ttr_con2, "transit_cost2") %>%
+  count(Gender, Anxiety) %>%
+  rename("Total" = n) 
+```
+<p>&nbsp;</p><p>&nbsp;</p>
+
+### Total Patients with Migraines
+```{r, message = FALSE, echo=FALSE}
+# Get a glimpse of the data
+# Using our connection reach into the DB
+# and show us some of the data for GR
+# Equivalent to:
+#   SELECT * FROM transit_cost...
+tbl(ttr_con2, "transit_cost2") %>%
+  count(Gender, Migraines) %>%
+  rename("Total" = n) 
+```
+<p>&nbsp;</p><p>&nbsp;</p>
+
+### Total Patients with Arthritis
+```{r, message = FALSE, echo=FALSE}
+# Get a glimpse of the data
+# Using our connection reach into the DB
+# and show us some of the data for GR
+# Equivalent to:
+#   SELECT * FROM transit_cost...
+tbl(ttr_con2, "transit_cost2") %>%
+  count(Gender, Arthritis) %>%
+  rename("Total" = n) 
+```
+<p>&nbsp;</p><p>&nbsp;</p>
+
+### Total Patients with Eczema
+```{r, message = FALSE, echo=FALSE}
+# Get a glimpse of the data
+# Using our connection reach into the DB
+# and show us some of the data for GR
+# Equivalent to:
+#   SELECT * FROM transit_cost...
+tbl(ttr_con2, "transit_cost2") %>%
+  count(Gender, Eczema) %>%
+  rename("Total" = n) 
+```
+<p>&nbsp;</p><p>&nbsp;</p>
+
+### Total Patients with Stroke
+```{r, message = FALSE, echo=FALSE}
+# Get a glimpse of the data
+# Using our connection reach into the DB
+# and show us some of the data for GR
+# Equivalent to:
+#   SELECT * FROM transit_cost...
+tbl(ttr_con2, "transit_cost2") %>%
+  count(Gender, Stroke) %>%
+  rename("Total" = n) 
+```
+<p>&nbsp;</p><p>&nbsp;</p>
+
+### Total Patients with Dementia
+```{r, message = FALSE, echo=FALSE}
+# Get a glimpse of the data
+# Using our connection reach into the DB
+# and show us some of the data for GR
+# Equivalent to:
+#   SELECT * FROM transit_cost...
+tbl(ttr_con2, "transit_cost2") %>%
+  count(Gender, Dementia) %>%
+  rename("Total" = n) 
+```
+<p>&nbsp;</p><p>&nbsp;</p>
+
+### Total Patients with HIV
+```{r, message = FALSE, echo=FALSE}
+# Get a glimpse of the data
+# Using our connection reach into the DB
+# and show us some of the data for GR
+# Equivalent to:
+#   SELECT * FROM transit_cost...
+tbl(ttr_con2, "transit_cost2") %>%
+  count(Gender, HIV) %>%
+  rename("Total" = n) 
+```
+<p>&nbsp;</p><p>&nbsp;</p>
+
+## Based on Condition and Age Group{.tabset .tabset-dropdown} 
+<!-- The tables below break down the data collected from the data with 20% noise.  -->
+Note: 0 represents Negative, and 1 represents Positive.
+
+### Total Patients with Diabetes
+```{r, message = FALSE, echo=FALSE}
+# Get a glimpse of the data
+# Using our connection reach into the DB
+# and show us some of the data for GR
+# Equivalent to:
+#   SELECT * FROM transit_cost...
+tbl(ttr_con2, "transit_cost2") %>%
+  count(Age, Diabetes) %>%
+  rename("Total" = n)
+```
+<p>&nbsp;</p><p>&nbsp;</p>
+
+### Total Patients with Asthma
+```{r, message = FALSE, echo=FALSE}
+# Get a glimpse of the data
+# Using our connection reach into the DB
+# and show us some of the data for GR
+# Equivalent to:
+#   SELECT * FROM transit_cost...
+tbl(ttr_con2, "transit_cost2") %>%
+  count(Age, Asthma) %>%
+  rename("Total" = n) 
+```
+<p>&nbsp;</p><p>&nbsp;</p>
+
+### Total Patients with Depression
+```{r, message = FALSE, echo=FALSE}
+# Get a glimpse of the data
+# Using our connection reach into the DB
+# and show us some of the data for GR
+# Equivalent to:
+#   SELECT * FROM transit_cost...
+tbl(ttr_con2, "transit_cost2") %>%
+  count(Age, Depression) %>%
+  rename("Total" = n) 
+```
+<p>&nbsp;</p><p>&nbsp;</p>
+
+### Total Patients with Anxiety
+```{r, message = FALSE, echo=FALSE}
+# Get a glimpse of the data
+# Using our connection reach into the DB
+# and show us some of the data for GR
+# Equivalent to:
+#   SELECT * FROM transit_cost...
+tbl(ttr_con2, "transit_cost2") %>%
+  count(Age, Anxiety) %>%
+  rename("Total" = n) 
+```
+<p>&nbsp;</p><p>&nbsp;</p>
+
+### Total Patients with Migraines
+```{r, message = FALSE, echo=FALSE}
+# Get a glimpse of the data
+# Using our connection reach into the DB
+# and show us some of the data for GR
+# Equivalent to:
+#   SELECT * FROM transit_cost...
+tbl(ttr_con2, "transit_cost2") %>%
+  count(Age, Migraines) %>%
+  rename("Total" = n) 
+```
+<p>&nbsp;</p><p>&nbsp;</p>
+
+### Total Patients with Arthritis
+```{r, message = FALSE, echo=FALSE}
+# Get a glimpse of the data
+# Using our connection reach into the DB
+# and show us some of the data for GR
+# Equivalent to:
+#   SELECT * FROM transit_cost...
+tbl(ttr_con2, "transit_cost2") %>%
+  count(Age, Arthritis) %>%
+  rename("Total" = n) 
+```
+<p>&nbsp;</p><p>&nbsp;</p>
+
+### Total Patients with Eczema
+```{r, message = FALSE, echo=FALSE}
+# Get a glimpse of the data
+# Using our connection reach into the DB
+# and show us some of the data for GR
+# Equivalent to:
+#   SELECT * FROM transit_cost...
+tbl(ttr_con2, "transit_cost2") %>%
+  count(Age, Eczema) %>%
+  rename("Total" = n) 
+```
+<p>&nbsp;</p><p>&nbsp;</p>
+
+### Total Patients with Stroke
+```{r, message = FALSE, echo=FALSE}
+# Get a glimpse of the data
+# Using our connection reach into the DB
+# and show us some of the data for GR
+# Equivalent to:
+#   SELECT * FROM transit_cost...
+tbl(ttr_con2, "transit_cost2") %>%
+  count(Age, Stroke) %>%
+  rename("Total" = n) 
+```
+<p>&nbsp;</p><p>&nbsp;</p>
+
+### Total Patients with Dementia
+```{r, message = FALSE, echo=FALSE}
+# Get a glimpse of the data
+# Using our connection reach into the DB
+# and show us some of the data for GR
+# Equivalent to:
+#   SELECT * FROM transit_cost...
+tbl(ttr_con2, "transit_cost2") %>%
+  count(Age, Dementia) %>%
+  rename("Total" = n) 
+```
+<p>&nbsp;</p><p>&nbsp;</p>
+
+### Total Patients with HIV
+```{r, message = FALSE, echo=FALSE}
+# Get a glimpse of the data
+# Using our connection reach into the DB
+# and show us some of the data for GR
+# Equivalent to:
+#   SELECT * FROM transit_cost...
+tbl(ttr_con2, "transit_cost2") %>%
+  count(Age, HIV) %>%
+  rename("Total" = n) 
+```
+<p>&nbsp;</p><p>&nbsp;</p>
+
+
+## Based on Condition, Age Group, and Gender{.tabset .tabset-dropdown} 
+<!-- The tables below break down the data collected from the data with 20% noise.  -->
+Note: 0 represents Negative, and 1 represents Positive.
+
+### Total Patients with Diabetes
+```{r, message = FALSE, echo=FALSE}
+# Get a glimpse of the data
+# Using our connection reach into the DB
+# and show us some of the data for GR
+# Equivalent to:
+#   SELECT * FROM transit_cost...
+tbl(ttr_con2, "transit_cost2") %>%
+  count(Age, Gender, Diabetes) %>%
+  rename("Total" = n)
+```
+<p>&nbsp;</p><p>&nbsp;</p>
+
+### Total Patients with Asthma
+```{r, message = FALSE, echo=FALSE}
+# Get a glimpse of the data
+# Using our connection reach into the DB
+# and show us some of the data for GR
+# Equivalent to:
+#   SELECT * FROM transit_cost...
+tbl(ttr_con2, "transit_cost2") %>%
+  count(Age, Gender, Asthma) %>%
+  rename("Total" = n) 
+```
+<p>&nbsp;</p><p>&nbsp;</p>
+
+### Total Patients with Depression
+```{r, message = FALSE, echo=FALSE}
+# Get a glimpse of the data
+# Using our connection reach into the DB
+# and show us some of the data for GR
+# Equivalent to:
+#   SELECT * FROM transit_cost...
+tbl(ttr_con2, "transit_cost2") %>%
+  count(Age, Gender,  Depression) %>%
+  rename("Total" = n) 
+```
+<p>&nbsp;</p><p>&nbsp;</p>
+
+### Total Patients with Anxiety
+```{r, message = FALSE, echo=FALSE}
+# Get a glimpse of the data
+# Using our connection reach into the DB
+# and show us some of the data for GR
+# Equivalent to:
+#   SELECT * FROM transit_cost ...
+tbl(ttr_con2, "transit_cost2") %>%
+  count(Age, Gender,  Anxiety) %>%
+  rename("Total" = n) 
+```
+<p>&nbsp;</p><p>&nbsp;</p>
+
+### Total Patients with Migraines
+```{r, message = FALSE, echo=FALSE}
+# Get a glimpse of the data
+# Using our connection reach into the DB
+# and show us some of the data for GR
+# Equivalent to:
+#   SELECT * FROM transit_cost...
+tbl(ttr_con2, "transit_cost2") %>%
+  count(Age, Gender,  Migraines) %>%
+  rename("Total" = n) 
+```
+<p>&nbsp;</p><p>&nbsp;</p>
+
+### Total Patients with Arthritis
+```{r, message = FALSE, echo=FALSE}
+# Get a glimpse of the data
+# Using our connection reach into the DB
+# and show us some of the data for GR
+# Equivalent to:
+#   SELECT * FROM transit_cost..
+tbl(ttr_con2, "transit_cost2") %>%
+  count(Age, Gender,  Arthritis) %>%
+  rename("Total" = n) 
+```
+<p>&nbsp;</p><p>&nbsp;</p>
+
+### Total Patients with Eczema
+```{r, message = FALSE, echo=FALSE}
+# Get a glimpse of the data
+# Using our connection reach into the DB
+# and show us some of the data for GR
+# Equivalent to:
+#   SELECT * FROM transit_cost..
+tbl(ttr_con2, "transit_cost2") %>%
+  count(Age, Gender,  Eczema) %>%
+  rename("Total" = n) 
+```
+<p>&nbsp;</p><p>&nbsp;</p>
+
+### Total Patients with Stroke
+```{r, message = FALSE, echo=FALSE}
+# Get a glimpse of the data
+# Using our connection reach into the DB
+# and show us some of the data for GR
+# Equivalent to:
+#   SELECT * FROM transit_cost..
+tbl(ttr_con2, "transit_cost2") %>%
+  count(Age, Gender,  Stroke) %>%
+  rename("Total" = n) 
+```
+<p>&nbsp;</p><p>&nbsp;</p>
+
+### Total Patients with Dementia
+```{r, message = FALSE, echo=FALSE}
+# Get a glimpse of the data
+# Using our connection reach into the DB
+# and show us some of the data for GR
+# Equivalent to:
+#   SELECT * FROM transit_cost..
+tbl(ttr_con2, "transit_cost2") %>%
+  count(Age, Gender,  Dementia) %>%
+  rename("Total" = n) 
+```
+<p>&nbsp;</p><p>&nbsp;</p>
+
+### Total Patients with HIV
+```{r, message = FALSE, echo=FALSE}
+# Get a glimpse of the data
+# Using our connection reach into the DB
+# and show us some of the data for GR
+# Equivalent to:
+#   SELECT * FROM transit_cost...
+tbl(ttr_con2, "transit_cost2") %>%
+  count(Age, Gender,  HIV) %>%
+  rename("Total" = n) 
+
+```
+
+## Search
+```{r, message = FALSE, echo=FALSE}
+transit_cost %>%
+  DT::datatable(list(scrollX = TRUE,
+                     pageLength = 50))
+```
+
+## Note 
+If the information you are searching for is not visible here, you can email me at dcsalina@go.olemiss.edu to find out more.
+```{r, message = FALSE, echo=FALSE}
+# dbDisconnect(ttrcon)
+# dbDisconnect(ttrcon2)
+```
+
+
+<!-- ```{sql, connection = ttr_con}  -->
+<!-- --SQL comment -->
+<!-- SELECT *  -->
+<!-- FROM transit_cost -->
+<!-- WHERE State = 'Texas' -->
+<!-- LIMIT 10 -->
+<!-- ``` -->
+
+

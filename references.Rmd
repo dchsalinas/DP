@@ -1,0 +1,47 @@
+---
+title: "References"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+Apple Inc. (2016). Differential Privacy Overview - Apple Inc. Retrieved September 21, 2022, from https://www.apple.com/privacy/docs/Differential_Privacy_Overview.pdf	 
+
+Barthe, G., Gaboardi, M., Hsu, J., &amp; Pierce, B. (2016). Programming language techniques 
+for Differential Privacy. ACM SIGLOG News, 3(1), 34–53. https://doi.org/10.1145/2893582.2893591
+
+Cyphers, B. (2017, December 7). Understanding differential privacy and why it matters for 
+digital rights. Access Now. Retrieved September 20, 2022, from https://www.accessnow.org/understanding-differential-privacy-matters-digital-rights/ 
+
+Differential Privacy: Issues for policymakers. Simons Institute for the Theory of Computing. (2020, August 30). https://simons.berkeley.edu/news/differential-privacy-issues-policymakers
+
+Geambasu, R. (n.d.). Private Systems. Private Systems: CUCS Research Seminar. Retrieved 
+from https://systems.cs.columbia.edu/private-systems-class/lectures/04-dp-mechanisms.pdf 
+
+Guidelines for the anonymization of microdata using R-package sdcMicro ... (n.d.). Retrieved October 2, 2022, from http://www2.uaem.mx/r-mirror/web/packages/sdcMicro/vignettes/guidelines.pdf 
+
+
+R: The binomial distribution. (n.d.). Retrieved October 28, 2022, from https://stat.ethz.ch/R-manual/R-devel/library/stats/html/Binomial.html 
+
+
+Ravitillo. (n.d.). Differential Privacy for dummies. Roberto Vitillo's Blog. Retrieved October 4, 2022, from https://robertovitillo.com/differential-privacy-for-dummies/ 
+
+
+Rubinstein BIP, Alda F (2017). “Pain-Free Random Differential Privacy with Sensitivity Sampling.” In 34th International Conference on Machine Learning (ICML'2017).
+
+
+Wickham H (2016). ggplot2: Elegant Graphics for Data Analysis. Springer-Verlag New York. ISBN 978-3-319-24277-4, https://ggplot2.tidyverse.org.
+
+Wickham H, Averick M, Bryan J, Chang W, McGowan LD, François R, Grolemund G, Hayes 
+
+
+A, Henry L, Hester J, Kuhn M, Pedersen TL, Miller E, Bache SM, Müller K, Ooms J, Robinson D, Seidel DP, Spinu V, Takahashi K, Vaughan D, Wilke C, Woo K, Yutani H (2019). “Welcome to the tidyverse.” Journal of Open Source Software, 4(43), 1686. doi:10.21105/joss.01686.
+
+
+Wickham H, François R, Henry L, Müller K (2022). dplyr: A Grammar of Data Manipulation. 
+https://dplyr.tidyverse.org, https://github.com/tidyverse/dplyr.
+
+

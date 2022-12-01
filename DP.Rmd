@@ -6,7 +6,7 @@ output:
 ---
 <style type="text/css">
 .main-container {
-  max-width: 1000px;
+  max-width: 1250px;
   margin-left: auto;
   margin-right: auto;
 }
@@ -340,7 +340,7 @@ cat("Average for HIV", HIVMean, "\n")
 
 ```{r normal-distribution-noise, warning=FALSE, message=FALSE}
 # noise from normal distribution
-# now choosing an average of 10% to corrupt at random 
+# now choosing an average of 20% to corrupt at random 
 set.seed(1) # specified a seed to make my data reproducible//get the same numbers repeatedly
 noise_20 <- rbinom(length(HIV), 1, 0.20) 
 # corrupt at random generation the vector HIV, for -- trials, for probability 
@@ -385,7 +385,7 @@ countOfHIV %>%
 ggplot(aes(x = HIV, y = n, fill = n)) + 
   geom_bar(stat = "identity", fill = "lightblue") +
   # geom_text(aes(label=n), vjust=2,size = 9, colour = "white") +
-  labs(title = "HIV Results Total")
+  labs(title = "HIV Results Total", y = "Cases")
 
 ```
 <p>&nbsp;</p>
@@ -398,8 +398,9 @@ ggplot(aes(x = HIV, y = n, fill = n)) +
 noisy_data_20 <- HIV + rnorm((HIV), 0.172, .2)
 # generate the noise to add and round it 
 
+
 # Plot the histograms for the above 
-hist(noisy_data_20, main = "Normal Distribution", 
+hist(noisy_data_20, main = "Normal Distribution",  xlab = "Answer Yes (1) or No (0)",
      col = "lightblue", xlim = c(-5, 5), ylim = c(0, 1.6), freq = FALSE)
 
 # vertical line // mean
@@ -418,7 +419,7 @@ abline(v=1,col="darkgreen",lwd=3)
 noisy_data_50 <- HIV + rnorm((HIV), 0.172, .5)
 # generate the noise to add and round it 
 
-hist(noisy_data_50, main = "Normal Distribution", 
+hist(noisy_data_50, main = "Normal Distribution", xlab = "Answer Yes (1) or No (0)",
      col = "lightblue", xlim =c(-5, 5), ylim = c(0, .8), freq = FALSE)
 
 # vertical line
@@ -437,7 +438,7 @@ abline(v=1,col="darkgreen",lwd=3)
 noisy_data_80 <- HIV + rnorm((HIV), 0.172, .75)
 # generate the noise to add and round it 
 
-hist(noisy_data_80, main = "Normal Distribution",
+hist(noisy_data_80, main = "Normal Distribution",xlab = "Answer Yes (1) or No (0)",
      col = "lightblue", xlim = c(-5, 5), ylim = c(0, .5), freq = FALSE)
 
 # vertical line
@@ -454,11 +455,11 @@ abline(v=1,col="darkgreen",lwd=3)
 x_20 <- HIV # HIV vector, calling it to x
 print(x_20, max=500)
 
-# adding noise to 10% percent of the data
+# adding noise to 20% percent of the data
 x_noise_20 <- sample(0:1, 200,replace=TRUE)  
 print(x_noise_20)
 
-# about 10% of x has been corrupted // the first 100 values
+# about 20% of x has been corrupted // the first 100 values
 x_20[1:200] <- c(x_noise_20) 
 print(x_20, max=500)
 
@@ -564,7 +565,8 @@ mapToBeUsedForHIV1 %>%
   geom_polygon(color = "gray", linewidth=0.2) +
   coord_equal() +
   labs(title = "HIV Results without Noise",
-       subtitle = "Diana Salinas")+
+       subtitle = "Diana Salinas",
+       fill = "Positive Cases")+
   scale_fill_distiller(palette = "Blues", trans = "reverse") +
   theme_map() 
 ```
@@ -580,7 +582,8 @@ mapToBeUsedForHIV2 %>%
   geom_polygon(color = "gray", linewidth=0.2) +
   coord_equal() +
   labs(title = "HIV Results with Noise",
-       subtitle = "Diana Salinas")+
+       subtitle = "Diana Salinas",
+        fill = "Positive Cases")+
   scale_fill_distiller(palette = "Blues", trans = "reverse") +
   theme_map() 
 ```
@@ -596,7 +599,8 @@ mapToBeUsedForHIV3 %>%
   geom_polygon(color = "gray", linewidth=0.2) +
   coord_equal() +
   labs(title = "HIV Results with Noise",
-       subtitle = "Diana Salinas")+
+       subtitle = "Diana Salinas",
+        fill = "Positive Cases")+
   scale_fill_distiller(palette = "Blues", trans = "reverse") +
   theme_map() 
 ```
@@ -611,7 +615,8 @@ mapToBeUsedForHIV4 %>%
   geom_polygon(color = "gray", linewidth=0.2) +
   coord_equal() +
   labs(title = "HIV Results with Noise",
-       subtitle = "Diana Salinas")+
+       subtitle = "Diana Salinas",
+        fill = "Positive Cases")+
   scale_fill_distiller(palette = "Blues", trans = "reverse") +
   theme_map() 
 ```
@@ -624,16 +629,16 @@ HIVtibble1 %>%
   ggplot(mapping = aes(x=Location,
                      y=n,
                      fill = `HIV Results`)) +
-   geom_bar(position="dodge", stat="identity", reverse = TRUE) +
+   geom_bar(position="dodge", stat="identity") +
    ylim(0, 100) +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
    scale_fill_discrete(labels=c('Negative', 'Positive')) +
-  labs(title = "HIV Results without Noise", fill="Results")
+  labs(title = "HIV Results without Noise", fill="Results", y = "Cases")
 ```
 <p>&nbsp;</p>
 
 
-### MD 20%
+### Noise 20%
 ```{r graphing-HIVnoise-2, warning=FALSE, message=TRUE, echo = FALSE, fig.width=14,fig.height=6}
 HIVtibble2 %>%
   ggplot(mapping = aes(x=Location,
@@ -643,12 +648,12 @@ HIVtibble2 %>%
    geom_bar(position="dodge", stat="identity") +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
    scale_fill_discrete(labels=c('Negative', 'Positive')) +
-  labs(title = "HIV Results with Noise", fill="Results")
+  labs(title = "HIV Results with Noise", fill="Results", y = "Cases")
 ```
 
 <p>&nbsp;</p>
 
-### MD 50%
+### Noise 50%
 ```{r graphing-HIVnoise-3, warning=FALSE, message=TRUE, echo = FALSE, fig.width=14,fig.height=6}
 HIVtibble3a %>%
   ggplot(mapping = aes(x=Location,
@@ -658,12 +663,11 @@ HIVtibble3a %>%
    geom_bar(position="dodge", stat="identity") +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
    scale_fill_discrete(labels=c('Negative', 'Positive')) +
-  labs(title = "HIV Results with Noise", fill="Results")
+  labs(title = "HIV Results with Noise", fill="Results", y = "Cases")
 ```
 
-<p>&nbsp;</p>
 
-### MD 75%
+### Noise 75%
 ```{r graphing-HIVnoise-4, warning=FALSE, message=TRUE, echo = FALSE, fig.width=14,fig.height=6}
 HIVtibble4a %>%
   ggplot(mapping = aes(x=Location,
@@ -673,7 +677,7 @@ HIVtibble4a %>%
    geom_bar(position="dodge", stat="identity") +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
    scale_fill_discrete(labels=c('Negative', 'Positive')) +
-  labs(title = "HIV Results with Noise", fill="Results")
+  labs(title = "HIV Results with Noise", fill="Results", y = "Cases")
 ```
 <p>&nbsp;</p>
 
@@ -689,7 +693,7 @@ HIVtibble1 %>%
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
   geom_text(aes(label=n), colour = "black", vjust=-.5,size = 4) +
   scale_fill_discrete(labels=c('Negative', 'Positive')) +
-  labs(title = "HIV Results without Noise", fill="Results") +
+  labs(title = "HIV Results without Noise", fill="Results", y = "Cases") +
   facet_wrap(~`HIV Results`, 2)
 ```
 
@@ -706,7 +710,7 @@ HIVtibble2 %>%
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
   geom_text(aes(label=n), colour = "black", vjust=-.5,size = 4) +
   scale_fill_discrete(labels=c('Negative', 'Positive')) +
-  labs(title = "HIV Results with Noise", fill="Results") +
+  labs(title = "HIV Results with Noise", fill="Results", y = "Cases") +
   facet_wrap(~`HIV Results with Noise`, 2)
 ```
 <p>&nbsp;</p>
@@ -722,7 +726,7 @@ HIVtibble3a %>%
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
   geom_text(aes(label=n), colour = "black", vjust=-.5,size = 4) +
   scale_fill_discrete(labels=c('Negative', 'Positive')) +
-  labs(title = "HIV Results with Noise", fill="Results") +
+  labs(title = "HIV Results with Noise", fill="Results",y = "Cases") +
   facet_wrap(~`HIV Results with Noise - 50`, 2)
 ```
 <p>&nbsp;</p>
@@ -738,9 +742,221 @@ HIVtibble4a %>%
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
   geom_text(aes(label=n), colour = "black", vjust=-.5,size = 4) +
   scale_fill_discrete(labels=c('Negative', 'Positive')) +
-  labs(title = "HIV Results with Noise", fill="Results") +
+  labs(title = "HIV Results with Noise", fill="Results", y = "Cases") +
   facet_wrap(~`HIV Results with Noise - 75`, 2)
 ```
 <p>&nbsp;</p>
 
-## How Can it be Improved
+## Conclusion {.tabset}
+Lower noise (epsilon) means lower accuracy but higher privacy. Higher epsilon means higher accuracy but lower privacy.
+
+### Conclusion I
+```{r linegraph-conclusion, warning=FALSE, message=TRUE, echo=FALSE, fig.width=14,fig.height=6}
+allNDatat <- tibble(Location, HIV)
+allNDatat <- allNDatat %>%
+  count(Location, HIV) %>%
+  rename(`HIV Count` = n) 
+
+allNDatat2 <- tibble(Location, x_20)
+allNDatat2 <- allNDatat2 %>%
+  count(Location, x_20) %>%
+  rename(`Noise 20%` = n)
+
+allNDatat3 <- tibble(Location, x_50)
+allNDatat3 <- allNDatat3 %>%
+  count(Location, x_50) %>%
+  rename(`Noise 50%` = n)
+
+allNDatat4 <- tibble(Location, x_75)
+allNDatat4 <- allNDatat4 %>%
+  count(Location, x_75) %>%
+  rename(`Noise 75%` = n)
+
+allNDatat1aa <- allNDatat%>%
+  filter(HIV == "1")
+
+allNDatat2aa <- allNDatat2%>%
+  filter(x_20 == "1")
+
+allNDatat3aa <- allNDatat3%>%
+  filter(x_50 == "1")
+
+allNDatat4aa <- allNDatat4%>%
+  filter(x_75 == "1")
+
+ggplot() +
+  geom_line(data=allNDatat1aa, aes(x=Location, y=`HIV Count`, color="No Noise", group=1))+
+  geom_line(data=allNDatat2aa, aes(x=Location, y=`Noise 20%`, color="20% Noise", group=1))+
+  geom_line(data=allNDatat3aa, aes(x=Location, y=`Noise 50%`, color="50% Noise", group=1))+
+  geom_line(data=allNDatat4aa, aes(x=Location, y=`Noise 75%`, color="75% Noise", group=1))+
+  
+  geom_point(data=allNDatat1aa, aes(x=Location, y=`HIV Count`, group=1)) +
+  geom_point(data=allNDatat2aa, color="darkgreen", aes(x=Location, y=`Noise 20%`, group=1))+
+  geom_point(data=allNDatat3aa, color="blue", aes(x=Location, y=`Noise 50%`, group=1))+
+  geom_point(data=allNDatat4aa, color="red", aes(x=Location, y=`Noise 75%`, group=1))+
+  
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))+
+  labs(title = "Comparison for Positive Cases based on Noise")
+
+# LL <- allNDatat$Location
+# HH <- allNDatat$HIV
+# n1 <- allNDatat$`HIV Count`
+# n2 <- allNDatat2$`Noise 20%`
+# n3 <- allNDatat3$`Noise 50%`
+# n4 <- allNDatat4$`Noise 75%`
+# allNoiseData <- tibble(LL, HH, n1, n2, n3, n4) 
+
+```
+<p>&nbsp;</p>
+
+```{r linegraph-conclusion2, warning=FALSE, message=TRUE, echo=FALSE, fig.width=14,fig.height=6}
+# allNDatat1b <- allNDatat%>%
+#   filter(HIV == "0")
+# 
+# allNDatat2b <- allNDatat2%>%
+#   filter(x_20 == "0")
+# 
+# allNDatat3b <- allNDatat3%>%
+#   filter(x_50 == "0")
+# 
+# allNDatat4b <- allNDatat4%>%
+#   filter(x_75 == "0")
+
+# ggplot() +
+#   geom_line(data=allNDatat1b, aes(x=Location, y=`HIV Count`, group=1)) +
+#   geom_line(data=allNDatat2b, color="darkgreen", aes(x=Location, y=`Noise 20%`, group=1))+
+#   geom_line(data=allNDatat3b, color="blue", aes(x=Location, y=`Noise 50%`, group=1))+
+#   geom_line(data=allNDatat4b, color="red", aes(x=Location, y=`Noise 75%`, group=1))+
+#   
+#   geom_point(data=allNDatat1b, aes(x=Location, y=`HIV Count`, group=1)) +
+#   geom_point(data=allNDatat2b, color="darkgreen", aes(x=Location, y=`Noise 20%`, group=1))+
+#   geom_point(data=allNDatat3b, color="blue", aes(x=Location, y=`Noise 50%`, group=1))+
+#   geom_point(data=allNDatat4b, color="red", aes(x=Location, y=`Noise 75%`, group=1))+
+#   
+#   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))+
+#   labs(title = "Comparison")
+
+# LL <- allNDatat$Location
+# HH <- allNDatat$HIV
+# n1 <- allNDatat$`HIV Count`
+# n2 <- allNDatat2$`Noise 20%`
+# n3 <- allNDatat3$`Noise 50%`
+# n4 <- allNDatat4$`Noise 75%`
+# allNoiseData <- tibble(LL, HH, n1, n2, n3, n4) 
+
+```
+
+
+### Conclusion II
+```{r linegraph-conclusion3, warning=FALSE, message=TRUE, echo=FALSE, fig.width=14,fig.height=6}
+allNDatat1a <- allNDatat  %>%
+  filter(HIV == "1") %>%
+  slice(1:20) 
+
+allNDatat2a <- allNDatat2  %>%
+  filter(x_20 == "1") %>%
+  slice(1:20)
+
+allNDatat3a <- allNDatat3  %>%
+  filter(x_50 == "1") %>%
+  slice(1:20)
+
+allNDatat4a <- allNDatat4 %>%
+  filter(x_75 == "1") %>%
+  slice(1:20)
+
+ggplot() +
+  geom_line(data=allNDatat1a, aes(x=Location, y=`HIV Count`, color="No Noise", group=1))+
+  geom_line(data=allNDatat2a, aes(x=Location, y=`Noise 20%`, color="20% Noise", group=1))+
+  geom_line(data=allNDatat3a, aes(x=Location, y=`Noise 50%`, color="50% Noise",  group=1))+
+  geom_line(data=allNDatat4a, aes(x=Location, y=`Noise 75%`,color="75% Noise", group=1))+
+  
+  geom_point(data=allNDatat1a, aes(x=Location, y=`HIV Count`, group=1)) +
+  geom_point(data=allNDatat2a, aes(x=Location, y=`Noise 20%`, group=1))+
+  geom_point(data=allNDatat3a, aes(x=Location, y=`Noise 50%`, group=1))+
+  geom_point(data=allNDatat4a, aes(x=Location, y=`Noise 75%`, group=1))+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))+
+  labs(title = "Comparison for Positive Cases based on Noise (Close-Up)")
+
+```
+
+
+```{r linegraph-conclusion4, warning=FALSE, message=TRUE, echo=FALSE, fig.width=14,fig.height=6}
+
+# allNDatat1a <- allNDatat  %>%
+#   filter(HIV == "0") %>%
+#   slice(1:20) 
+
+# allNDatat2a <- allNDatat2  %>%
+#    filter(x_20 == "0") %>%
+#   slice(1:20) 
+# 
+# allNDatat3a <- allNDatat3  %>%
+#    filter(x_50 == "0") %>%
+#   slice(1:20) 
+# 
+# allNDatat4a <- allNDatat4 %>%
+#    filter(x_75 == "0") %>%
+#   slice(1:20) 
+# 
+# ggplot() +
+#   geom_line(data=allNDatat1a, aes(x=Location, y=`HIV Count`, group=1)) +
+#   geom_line(data=allNDatat2a, color="darkgreen", aes(x=Location, y=`Noise 20%`, group=1))+
+#   geom_line(data=allNDatat3a, color="blue", aes(x=Location, y=`Noise 50%`, group=1))+
+#   geom_line(data=allNDatat4a, color="red", aes(x=Location, y=`Noise 75%`, group=1))+
+#   
+#   geom_point(data=allNDatat1a, aes(x=Location, y=`HIV Count`, group=1)) +
+#   geom_point(data=allNDatat2a, color="darkgreen", aes(x=Location, y=`Noise 20%`, group=1))+
+#   geom_point(data=allNDatat3a, color="blue", aes(x=Location, y=`Noise 50%`, group=1))+
+#   geom_point(data=allNDatat4a, color="red", aes(x=Location, y=`Noise 75%`, group=1))+
+#   
+#   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))+
+#   labs(title = "Comparison") 
+
+```
+
+<p>&nbsp;</p>
+
+### Conclusion III
+```{r linegraph-conclusion5, warning=FALSE, message=TRUE, echo=FALSE, fig.width=14,fig.height=6}
+ggplot() +
+  geom_line(data=allNDatat1aa, aes(x=Location, y=`HIV Count`, color="No Noise", group=1))+
+  # geom_line(data=allNDatat2aa, color="darkgreen", aes(x=Location, y=`Noise 20%`, group=1))+
+  # geom_line(data=allNDatat3aa, color="blue", aes(x=Location, y=`Noise 50%`, group=1))+
+  geom_line(data=allNDatat4aa, aes(x=Location, y=`Noise 75%`, color="75% Noise", group=1))+
+  
+  geom_point(data=allNDatat1aa, color = "black", aes(x=Location, y=`HIV Count`, group=1)) +
+  # geom_point(data=allNDatat2aa, color="darkgreen", aes(x=Location, y=`Noise 20%`, group=1))+
+  # geom_point(data=allNDatat3aa, color="blue", aes(x=Location, y=`Noise 50%`, group=1))+
+  geom_point(data=allNDatat4aa, color="red", aes(x=Location, y=`Noise 75%`, group=1))+
+  
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))+
+  labs(title = "Comparison for Raw Data and Change with Noise")
+
+# negative results
+# allNDatat1a <- allNDatat  %>%
+#   filter(HIV == "0") %>%
+#   slice(1:20) 
+# 
+# allNDatat2a <- allNDatat2  %>%
+#    filter(x_20 == "0") %>%
+#   slice(1:20) 
+# 
+# allNDatat3a <- allNDatat3  %>%
+#    filter(x_50 == "0") %>%
+#   slice(1:20) 
+# 
+# allNDatat4a <- allNDatat4 %>%
+#    filter(x_75 == "0") %>%
+#   slice(1:20) 
+# 
+# ggplot() +
+#   geom_line(data=allNDatat1a, aes(x=Location, y=`HIV Count`, group=1)) +
+#   # geom_line(data=allNDatat2a, color="darkgreen", aes(x=Location, y=`Noise 20%`, group=1))+
+#   geom_line(data=allNDatat4a, color="red", aes(x=Location, y=`Noise 75%`, group=1))+
+#   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))+
+#   labs(title = "Differences for Negative Cases") 
+
+```
+
+<p>&nbsp;</p><p>&nbsp;</p>

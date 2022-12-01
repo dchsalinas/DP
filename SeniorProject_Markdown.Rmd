@@ -1,0 +1,56 @@
+---
+title: "Differential Privacy"
+---
+
+<style type="text/css">
+.main-container {
+  max-width: 1300px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+ /* unvisited link */
+a:link {
+  color: navy;
+}
+
+/* visited link */
+a:visited {
+  color: green;
+}
+
+/* mouse over link */
+a:hover {
+  color: purple;
+}
+
+/* selected link */
+a:active {
+  color: blue;
+} 
+</style>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r load-library, message=FALSE, echo=FALSE}
+rm(list = ls())
+pacman::p_load(tidyverse, rmarkdown, htmlwidgets, htmltools, maps, 
+               webshot, leaflet, kableExtra, scales, stringr, stringi,
+               mapproj, usmap, rvest, rcis, plotly, cowplot, socviz, 
+               RColorBrewer, kableExtra, gridExtra, dplyr, tidyr, 
+               ggplot2, diffpriv, sdcMicro, readr, ggrepel, randomNames)
+
+suppressPackageStartupMessages({
+  library(data.table)
+  library(digest)
+  library(knitr) # used only for post creation
+})
+
+library(tinytex) 
+webshot::install_phantomjs(force=TRUE)
+```
+
+To use my data, I changed the values of the columns of conditions from TRUE/FALSE to 1/0. 
+
